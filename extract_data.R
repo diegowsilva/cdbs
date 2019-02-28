@@ -1,0 +1,136 @@
+rm(list = ls())
+gc()
+dev.off()
+
+key    = hash(charToRaw("xxx"))
+cipher = readRDS(file="login_data_cipher.rds")
+nonce  = readRDS(file="login_data_nonce.rds")
+
+require(RSelenium)
+require(tidyverse)
+require(rvest)
+require(rjson)
+require(sodium)
+
+# this code requires a file named login_data.txt with the following content
+#{
+#  "user": "12345"
+#  ,"password: "xxx"
+#}
+key <- hash(charToRaw("MacBook Air"))
+login_data = data_decrypt(cipher, key, nonce) %>% unserialize
+
+URL <- "https://www.easynvest.com.br/autenticacao"
+sleep_time = 5
+
+# start the server if one isnt running
+rD <- rsDriver(browser = "chrome",check = TRUE)
+remDr <- rD[["client"]]
+
+remDr$navigate(URL)
+Sys.sleep(sleep_time)
+# //*[@id="username"]
+webElem_username <- remDr$findElement(using = 'xpath', value = '//*[@id="username"]')
+login_data$user %>% 
+  list %>% 
+  webElem_username$sendKeysToElement(.)
+
+# //*[@id="password"]
+webElem_password <- remDr$findElement(using = 'xpath', value = '//*[@id="password"]')
+login_data$password %>% 
+  list %>% 
+  webElem_password$sendKeysToElement(.)
+Sys.sleep(sleep_time)
+
+rm(login_data)
+
+# //*[@id="app"]/div[2]/section/div/div/form/div[3]/button
+webElem_enter = remDr$findElement(using = 'xpath', value = '//*[@id="app"]/div[2]/section/div/div/form/div[3]/button')
+webElem_enter$clickElement()
+Sys.sleep(sleep_time)
+
+# //*[@id="app"]/div[2]/div[1]/div/div/div/nav/ul/li[2]/a
+webElem_invest = remDr$findElement(using = 'xpath', value = '//*[@id="app"]/div[2]/div[1]/div/div/div/nav/ul/li[2]/a')
+webElem_invest$clickElement()
+Sys.sleep(sleep_time)
+
+# //*[@id="app"]/div[2]/div[2]/div/section/div[1]/div/div[2]/div/h1
+webElem_cdb = remDr$findElement(using = 'xpath', value = '//*[@id="app"]/div[2]/div[2]/div/section/div[1]/div/div[2]/div/h1')
+webElem_cdb$clickElement()
+Sys.sleep(sleep_time)
+
+# //*[@id="app"]/div[2]/div[2]/div/section[2]/div/div[1]/div/button[2]
+remDr$findElement(using = 'xpath', value ='//*[@id="app"]/div[2]/div[2]/div/section[1]/div[1]')$clickElement()
+webElem_scroll <- remDr$findElement("css", "body")
+webElem_scroll$sendKeysToElement(list(key = "down_arrow"))
+webElem_list_cdb = remDr$findElement(using = 'xpath', value = '//*[@id="app"]/div[2]/div[2]/div/section[2]/div/div[1]/div/button[2]')
+webElem_list_cdb$clickElement()
+
+# //*[@id="app"]/div[2]/div[2]/div/section[2]/div/table
+source_cdb = remDr$getPageSource()
+xpath_table_cdb = '//*[@id="app"]/div[2]/div[2]/div/section[2]/div/table'
+
+# //*[@id="app"]/div[2]/div[1]/div/div/div/nav/ul/li[2]/a
+webElem_invest = remDr$findElement(using = 'xpath', value = '//*[@id="app"]/div[2]/div[1]/div/div/div/nav/ul/li[2]/a')
+webElem_invest$clickElement()
+Sys.sleep(sleep_time)
+
+# //*[@id="app"]/div[2]/div[2]/div/section/div[1]/div/div[3]/div/h1
+webElem_lci = remDr$findElement(using = 'xpath', value = '//*[@id="app"]/div[2]/div[2]/div/section/div[1]/div/div[3]/div/h1')
+webElem_lci$clickElement()
+Sys.sleep(sleep_time)
+
+# //*[@id="app"]/div[2]/div[2]/div/section[2]/div/table
+source_lci = remDr$getPageSource()
+xpath_table_lci = '//*[@id="app"]/div[2]/div[2]/div/section[2]/div/table'
+
+remDr$close()
+# stop the selenium server
+rD[["server"]]$stop() 
+
+
+rm(list=setdiff(ls(),c("source_cdb","xpath_table_cdb","source_lci","xpath_table_lci")))
+gc()
+
+# Working on CDB page
+df_cdb = source_cdb[[1]] %>%
+  read_html() %>%
+  html_nodes(xpath = xpath_table_cdb) %>%
+  html_table() %>%
+  .[[1]]
+
+names(df_cdb) = df_cdb[1,]
+df_cdb = df_cdb[-1,1:5]
+df_cdb$Modalidade = "CDB"
+df_cdb = df_cdb %>% 
+            filter(Liquidez != "D+1") %>%
+            select(-matches("Liquidez"))
+
+# Working on LCI page
+df_lci = source_lci[[1]] %>%
+  read_html() %>%
+  html_nodes(xpath = xpath_table_lci) %>%
+  html_table() %>%
+  .[[1]]
+
+names(df_lci) = df_lci[1,]
+df_lci = df_lci[-1,1:5]
+df_lci$Modalidade = "LCI"
+df_lci = df_lci %>%
+            select(-matches("CDB"))
+
+df_all = rbind(df_cdb,df_lci)
+
+df_all$Tipo   = df_all$Tipo %>% 
+                  gsub(pattern = "Pr.+-Fixado",replacement = "Pre-Fixado",.)
+df_all$Prazo  = df_all$Prazo %>% 
+                  as.Date(.,"%d/%m/%Y")
+df_all$Rentabilidade = df_all$Rentabilidade %>% 
+                          gsub(pattern = ",",replacement = "\\.",.) %>%
+                          gsub(pattern = "(% do CDI)|(% a.a.)|(IPCA \\+ )|(%)", replacement = "",.) %>%
+                          as.numeric %>%
+                          "/"(100)
+rm(list = setdiff(ls(),"df_all"))
+
+write.csv(df_all,paste0("data/cdbs_lci_",gsub(pattern = "[^0-9]", replacement = "_", Sys.time()),".csv"),row.names = F)
+gc()
