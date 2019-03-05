@@ -1,8 +1,6 @@
-login_data.txt
 .Rproj.user
 .RData
 .RHistory
-login_data_cipher.rds
-login_data_nonce.rds
 cdbs.Rproj
-encrypter.R
+test_*
+key/*

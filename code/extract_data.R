@@ -1,27 +1,23 @@
-rm(list = ls())
-gc()
-dev.off()
-
-key    = hash(charToRaw("xxx"))
-cipher = readRDS(file="login_data_cipher.rds")
-nonce  = readRDS(file="login_data_nonce.rds")
-
 require(RSelenium)
 require(tidyverse)
 require(rvest)
-require(rjson)
-require(sodium)
+require(RJSONIO)
+require(ggrepel)
+
+setwd("/Users/dws/finance/cdbs")
+
+
+#install.packages(c("RSelenium","tidyverse","rvest","RJSONIO","ggrepel"), repos='http://cran.us.r-project.org')
+
 
 # this code requires a file named login_data.txt with the following content
-#{
-#  "user": "12345"
-#  ,"password: "xxx"
-#}
-key <- hash(charToRaw("MacBook Air"))
-login_data = data_decrypt(cipher, key, nonce) %>% unserialize
+#{"user":"12345","password": "xxx"}
 
-URL <- "https://www.easynvest.com.br/autenticacao"
-sleep_time = 5
+login_data = "key/login_data_easynvest.txt" %>%
+  RJSONIO::fromJSON(.)
+
+URL = "https://www.easynvest.com.br/autenticacao"
+sleep_time = 10
 
 # start the server if one isnt running
 rD <- rsDriver(browser = "chrome",check = TRUE)
@@ -29,15 +25,16 @@ remDr <- rD[["client"]]
 
 remDr$navigate(URL)
 Sys.sleep(sleep_time)
+
 # //*[@id="username"]
 webElem_username <- remDr$findElement(using = 'xpath', value = '//*[@id="username"]')
-login_data$user %>% 
+login_data[1] %>% 
   list %>% 
   webElem_username$sendKeysToElement(.)
 
 # //*[@id="password"]
 webElem_password <- remDr$findElement(using = 'xpath', value = '//*[@id="password"]')
-login_data$password %>% 
+login_data[2] %>% 
   list %>% 
   webElem_password$sendKeysToElement(.)
 Sys.sleep(sleep_time)
@@ -52,12 +49,12 @@ Sys.sleep(sleep_time)
 # //*[@id="app"]/div[2]/div[1]/div/div/div/nav/ul/li[2]/a
 webElem_invest = remDr$findElement(using = 'xpath', value = '//*[@id="app"]/div[2]/div[1]/div/div/div/nav/ul/li[2]/a')
 webElem_invest$clickElement()
-Sys.sleep(sleep_time)
+Sys.sleep(sleep_time+10)
 
 # //*[@id="app"]/div[2]/div[2]/div/section/div[1]/div/div[2]/div/h1
 webElem_cdb = remDr$findElement(using = 'xpath', value = '//*[@id="app"]/div[2]/div[2]/div/section/div[1]/div/div[2]/div/h1')
 webElem_cdb$clickElement()
-Sys.sleep(sleep_time)
+Sys.sleep(sleep_time+15)
 
 # //*[@id="app"]/div[2]/div[2]/div/section[2]/div/div[1]/div/button[2]
 remDr$findElement(using = 'xpath', value ='//*[@id="app"]/div[2]/div[2]/div/section[1]/div[1]')$clickElement()
@@ -73,12 +70,12 @@ xpath_table_cdb = '//*[@id="app"]/div[2]/div[2]/div/section[2]/div/table'
 # //*[@id="app"]/div[2]/div[1]/div/div/div/nav/ul/li[2]/a
 webElem_invest = remDr$findElement(using = 'xpath', value = '//*[@id="app"]/div[2]/div[1]/div/div/div/nav/ul/li[2]/a')
 webElem_invest$clickElement()
-Sys.sleep(sleep_time)
+Sys.sleep(sleep_time+10)
 
 # //*[@id="app"]/div[2]/div[2]/div/section/div[1]/div/div[3]/div/h1
 webElem_lci = remDr$findElement(using = 'xpath', value = '//*[@id="app"]/div[2]/div[2]/div/section/div[1]/div/div[3]/div/h1')
 webElem_lci$clickElement()
-Sys.sleep(sleep_time)
+Sys.sleep(sleep_time+15)
 
 # //*[@id="app"]/div[2]/div[2]/div/section[2]/div/table
 source_lci = remDr$getPageSource()
@@ -132,5 +129,7 @@ df_all$Rentabilidade = df_all$Rentabilidade %>%
                           "/"(100)
 rm(list = setdiff(ls(),"df_all"))
 
-write.csv(df_all,paste0("data/cdbs_lci_",gsub(pattern = "[^0-9]", replacement = "_", Sys.time()),".csv"),row.names = F)
+time_refresh = Sys.time()
+
+write.csv(df_all,paste0("data/cdbs_lci_",gsub(pattern = "[^0-9]", replacement = "_",time_refresh),".csv"),row.names = F)
 gc()
