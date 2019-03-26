@@ -5,3 +5,9 @@ cdbs.Rproj
 test_*
 key/*
 README.html
+nohup.out
+code/crontab.bkp
+code/nohup.out
+data/bkp_crontab.txt
+data/*.csv
+.DS_Store

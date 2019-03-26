@@ -1,5 +1,5 @@
 require(telegram.bot)
-setwd("/Users/dws/finance/cdbs")
+#setwd("/Users/dws/finance/cdbs")
 
 TELEGRAM_BOT_TOKEN = readLines("key/telegram_bot_token.txt")
 
@@ -40,40 +40,42 @@ filter_user <- as.BaseFilter(function(message) message$from_user  == "622818266"
 refresh_cdi <- function(bot, update){
   bot$sendMessage(chat_id = update$message$chat_id,
                   text = sprintf("Oi, %s! 
-                                 Seguem abaixo os melhores CDB/LCI indexados ao CDI disponiveis na Easynvest.", update$message$from$first_name))
-  bot$sendPhoto(chat_id = update$message$chat_id,
-                photo = "bot/plot_cdi.png")
+Seguem abaixo os melhores CDB/LCI *indexados ao CDI* disponiveis na Easynvest.", update$message$from$first_name),
+                  parse_mode = "Markdown")
   bot$sendMessage(chat_id = update$message$chat_id,
                   text = paste0(readRDS("bot/msg_cdi.rds"),collapse = "\n"),
                   parse_mode = "Markdown")
-  bot$sendMessage(chat_id = update$message$chat_id,text = paste0("Atualizado em: ",readRDS("bot/timestamp_cdbs.rds"),collapse = ""))
+  bot$sendPhoto(chat_id = update$message$chat_id,
+                photo = "bot/plot_cdi.png")
+  bot$sendMessage(chat_id = update$message$chat_id,text = paste0("Atualizado em: ",readRDS("bot/timestamp_cdi.rds"),collapse = ""))
 }
 
 # pre-fixado
 refresh_pre <- function(bot, update){
   bot$sendMessage(chat_id = update$message$chat_id,
                   text = sprintf("Oi, %s! 
-                                 Seguem abaixo os melhores CDB/LCI pré-fixados disponiveis na Easynvest.", update$message$from$first_name))
-  bot$sendPhoto(chat_id = update$message$chat_id,
-                photo = "bot/plot_pre.png")
+Seguem abaixo os melhores CDB/LCI *pré-fixados* disponiveis na Easynvest.", update$message$from$first_name),
+                  parse_mode = "Markdown")
   bot$sendMessage(chat_id = update$message$chat_id,
                   text = paste0(readRDS("bot/msg_pre.rds"),collapse = "\n"),
                   parse_mode = "Markdown")
-  bot$sendMessage(chat_id = update$message$chat_id,text = paste0("Atualizado em: ",readRDS("bot/timestamp_cdbs.rds"),collapse = ""))
+  bot$sendPhoto(chat_id = update$message$chat_id,
+                photo = "bot/plot_pre.png")
+  bot$sendMessage(chat_id = update$message$chat_id,text = paste0("Atualizado em: ",readRDS("bot/timestamp_pre.rds"),collapse = ""))
 }
 
 # IPCA
 refresh_ipca <- function(bot, update){
   bot$sendMessage(chat_id = update$message$chat_id,
                   text = sprintf("Oi, %s! 
-                                 Seguem abaixo os melhores CDB/LCI indexados ao *IPCA* disponiveis na Easynvest.", update$message$from$first_name),
+Seguem abaixo os melhores CDB/LCI indexados ao *IPCA* disponiveis na Easynvest.", update$message$from$first_name),
                   parse_mode = "Markdown")
-  bot$sendPhoto(chat_id = update$message$chat_id,
-                photo = "bot/plot_ipca.png")
   bot$sendMessage(chat_id = update$message$chat_id,
                   text = paste0(readRDS("bot/msg_ipca.rds"),collapse = "\n"),
                   parse_mode = "Markdown")
-  bot$sendMessage(chat_id = update$message$chat_id,text = paste0("Atualizado em: ",readRDS("bot/timestamp_cdbs.rds"),collapse = ""))
+  bot$sendPhoto(chat_id = update$message$chat_id,
+                photo = "bot/plot_ipca.png")
+  bot$sendMessage(chat_id = update$message$chat_id,text = paste0("Atualizado em: ",readRDS("bot/timestamp_ipca.rds"),collapse = ""))
 }
 
 # build the updater

@@ -4,7 +4,11 @@ require(rvest)
 require(RJSONIO)
 require(ggrepel)
 
-setwd("/Users/dws/finance/cdbs")
+rm(list=ls())
+gc()
+
+
+setwd("/Users/dws/coding/finance/cdbs")
 
 
 #install.packages(c("RSelenium","tidyverse","rvest","RJSONIO","ggrepel"), repos='http://cran.us.r-project.org')
@@ -17,14 +21,20 @@ login_data = "key/login_data_easynvest.txt" %>%
   RJSONIO::fromJSON(.)
 
 URL = "https://www.easynvest.com.br/autenticacao"
+
 sleep_time = 10
 
 # start the server if one isnt running
-rD <- rsDriver(browser = "chrome",check = TRUE)
+#rD <- rsDriver(browser = "chrome",check = TRUE)
+#remDr <- rD[["client"]]
+
+eCap <- list(chromeOptions=list(binary="/Applications/Google\ Chrome\ Canary.app/Contents/MacOS/Google\ Chrome\ Canary"))
+rD <- rsDriver(extraCapabilities = eCap)
 remDr <- rD[["client"]]
 
 remDr$navigate(URL)
 Sys.sleep(sleep_time)
+#remDr$screenshot(TRUE)
 
 # //*[@id="username"]
 webElem_username <- remDr$findElement(using = 'xpath', value = '//*[@id="username"]')
@@ -37,6 +47,7 @@ webElem_password <- remDr$findElement(using = 'xpath', value = '//*[@id="passwor
 login_data[2] %>% 
   list %>% 
   webElem_password$sendKeysToElement(.)
+#remDr$screenshot(TRUE)
 Sys.sleep(sleep_time)
 
 rm(login_data)
@@ -46,15 +57,19 @@ webElem_enter = remDr$findElement(using = 'xpath', value = '//*[@id="app"]/div[2
 webElem_enter$clickElement()
 Sys.sleep(sleep_time)
 
+#remDr$screenshot(TRUE)
+
 # //*[@id="app"]/div[2]/div[1]/div/div/div/nav/ul/li[2]/a
 webElem_invest = remDr$findElement(using = 'xpath', value = '//*[@id="app"]/div[2]/div[1]/div/div/div/nav/ul/li[2]/a')
 webElem_invest$clickElement()
+#remDr$screenshot(TRUE)
 Sys.sleep(sleep_time+10)
 
 # //*[@id="app"]/div[2]/div[2]/div/section/div[1]/div/div[2]/div/h1
 webElem_cdb = remDr$findElement(using = 'xpath', value = '//*[@id="app"]/div[2]/div[2]/div/section/div[1]/div/div[2]/div/h1')
 webElem_cdb$clickElement()
 Sys.sleep(sleep_time+15)
+#remDr$screenshot(TRUE)
 
 # //*[@id="app"]/div[2]/div[2]/div/section[2]/div/div[1]/div/button[2]
 remDr$findElement(using = 'xpath', value ='//*[@id="app"]/div[2]/div[2]/div/section[1]/div[1]')$clickElement()
