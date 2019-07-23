@@ -1,5 +1,5 @@
 require(telegram.bot)
-#setwd("/Users/dws/finance/cdbs")
+setwd("/Users/dws/coding/finance/cdbs")
 
 TELEGRAM_BOT_TOKEN = readLines("key/telegram_bot_token.txt")
 
